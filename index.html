@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多维表格导航中心</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --accent-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --text-color: #333;
+            --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            --hover-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: var(--text-color);
+            line-height: 1.6;
+            transition: opacity 0.3s ease;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: var(--card-shadow);
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .search-box {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .search-box input {
+            padding: 12px 20px;
+            width: 100%;
+            max-width: 500px;
+            border: none;
+            border-radius: 50px;
+            box-shadow: var(--card-shadow);
+            font-size: 1rem;
+            outline: none;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .search-box input:focus {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        .grid.loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .card-header {
+            padding: 20px;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .card-icon {
+            font-size: 1.8rem;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .card-header h3 {
+            font-size: 1.4rem;
+            margin-bottom: 5px;
+            flex: 1;
+        }
+
+        .card-body {
+            padding: 20px;
+            flex-grow: 1;
+        }
+
+        .card-body p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .card-footer {
+            padding: 0 20px 20px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 600;
+            transition: background 0.3s ease, transform 0.2s ease;
+            width: 100%;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        .btn:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        .btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn i {
+            font-size: 0.9rem;
+        }
+
+        .category-filter {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .category-btn {
+            padding: 8px 16px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .category-btn:hover, .category-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            margin-top: 50px;
+            color: #777;
+            border-top: 1px solid #eee;
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 50px 20px;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            color: #ddd;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #555;
+        }
+
+        .empty-state p {
+            color: #777;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .loading-indicator {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: var(--primary-color);
+        }
+
+        .loading-indicator.active {
+            display: block;
+        }
+
+        .loading-indicator i {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2rem;
+            }
+
+            header p {
+                font-size: 1rem;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .search-box {
+                padding: 0 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+
+            header {
+                padding: 20px 0;
+            }
+
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            .card-header h3 {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-table"></i> 多维表格导航中心</h1>
+            <p>集中访问所有业务所需的多维表格，提高工作效率</p>
+        </header>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="搜索表格名称或描述...">
+        </div>
+
+        <div class="category-filter">
+            <button class="category-btn active" data-category="all">全部</button>
+        </div>
+
+        <div class="loading-indicator" id="loadingIndicator">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>正在加载表格...</p>
+        </div>
+
+        <div class="grid" id="cardGrid">
+            <!-- 卡片将通过JavaScript动态生成 -->
+        </div>
+    </div>
+
+    <footer>
+        <p>© 多维表格导航中心 | 最后更新: <span id="currentDate"></span></p>
+    </footer>
+
+    <script>
+        // 获取当前日期并显示在页脚
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('zh-CN');
+
+        // 表格数据
+        const tableData = [
+            {
+                title: "首客拜访个人任务查询表（需要每周更新）",
+                description: "输入姓名快速查询自己的任务并更新任务，需要更新的列''进展''''任务情况''",
+                link: "https://www.kdocs.cn/wo/sl/v12kzcxH",
+                category: "sales",
+                icon: "fas fa-chart-line",
+                iconColor: "#3498db"
+            },
+            {
+                title: "144家情况跟踪表",
+                description: "此表格包含144家客户和60家清单客户首客和清零情况，如需支撑请在'需要支撑说明'列填写",
+                link: "https://www.kdocs.cn/wo/sl/v1rdog5",
+                category: "marketing",
+                icon: "fas fa-bullhorn",
+                iconColor: "#e74c3c"
+            },
+            {
+                title: "每周首客记录表",
+                description: "每周首客走访记录",
+                link: "https://www.kdocs.cn/wo/sl/v14Wp56Q",
+                category: "marketing",
+                icon: "fas fa-calendar-week",
+                iconColor: "#2ecc71"
+            },
+            {
+                title: "行业客户清单",
+                description: "行业客户拜访及商机情况",
+                link: "https://www.kdocs.cn/wo/sl/v1MaaO4",
+                category: "sales",
+                icon: "fas fa-users",
+                iconColor: "#f39c12"
+            }
+        ];
+
+        // 生成卡片函数
+        function generateCards(data) {
+            const grid = document.getElementById('cardGrid');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+
+            // 显示加载状态
+            grid.classList.add('loading');
+            loadingIndicator.classList.add('active');
+
+            // 使用setTimeout模拟加载过程，让用户有更好的视觉反馈
+            setTimeout(() => {
+                grid.innerHTML = '';
+
+                if (data.length === 0) {
+                    grid.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-file-excel"></i>
+                            <h3>未找到匹配的表格</h3>
+                            <p>请尝试其他搜索词或选择不同的分类</p>
+                        </div>
+                    `;
+                } else {
+                    data.forEach(item => {
+                        const card = document.createElement('div');
+                        card.className = 'card';
+                        card.dataset.category = item.category;
+
+                        card.innerHTML = `
+                            <div class="card-header">
+                                <div class="card-icon" style="background-color: ${item.iconColor}">
+                                    <i class="${item.icon}"></i>
+                                </div>
+                                <h3>${item.title}</h3>
+                            </div>
+                            <div class="card-body">
+                                <p>${item.description}</p>
+                            </div>
+                            <div class="card-footer">
+                                <button class="btn" data-link="${item.link}">
+                                    <i class="fas fa-external-link-alt"></i> 访问表格
+                                </button>
+                            </div>
+                        `;
+
+                        grid.appendChild(card);
+                    });
+
+                    // 为所有按钮添加点击事件
+                    document.querySelectorAll('.btn[data-link]').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const link = this.getAttribute('data-link');
+                            openTableLink(link);
+                        });
+                    });
+                }
+
+                // 隐藏加载状态
+                grid.classList.remove('loading');
+                loadingIndicator.classList.remove('active');
+            }, 300); // 300ms的延迟让用户感知到加载过程
+        }
+
+        // 打开表格链接的函数
+        function openTableLink(url) {
+            // 添加页面状态指示，让用户知道即将离开页面
+            document.body.style.opacity = '0.8';
+
+            // 短暂延迟后打开链接，让用户看到状态变化
+            setTimeout(() => {
+                // 使用pushState添加历史记录，确保浏览器返回键可用
+                const state = {
+                    page: 'table',
+                    timestamp: Date.now(),
+                    returnUrl: window.location.href
+                };
+                const title = '表格访问';
+                const urlFragment = '#table-access';
+
+                history.pushState(state, title, urlFragment);
+
+                // 在新标签页打开链接
+                window.open(url, '_blank');
+
+                // 恢复页面状态
+                document.body.style.opacity = '1';
+
+                // 添加一个小延迟后回到原始URL，但不影响历史记录
+                setTimeout(() => {
+                    // 使用replaceState保持页面URL整洁
+                    history.replaceState({
+                        page: 'home',
+                        timestamp: Date.now()
+                    }, '多维表格导航中心', window.location.pathname);
+                }, 100);
+            }, 200);
+        }
+
+        // 初始化生成所有卡片
+        generateCards(tableData);
+
+        // 搜索功能
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const activeCategory = document.querySelector('.category-btn.active').dataset.category;
+
+            let filteredData = tableData;
+
+            // 如果搜索词不为空，则进行搜索过滤
+            if (searchTerm) {
+                filteredData = filteredData.filter(item =>
+                    item.title.toLowerCase().includes(searchTerm) ||
+                    item.description.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            // 如果当前分类不是"全部"，则进行分类过滤
+            if (activeCategory !== 'all') {
+                filteredData = filteredData.filter(item => item.category === activeCategory);
+            }
+
+            generateCards(filteredData);
+        });
+
+        // 分类筛选功能
+        document.querySelectorAll('.category-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                // 更新活动按钮状态
+                document.querySelectorAll('.category-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                this.classList.add('active');
+
+                const category = this.dataset.category;
+                const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+                let filteredData = tableData;
+
+                // 如果搜索词不为空，则进行搜索过滤
+                if (searchTerm) {
+                    filteredData = filteredData.filter(item =>
+                        item.title.toLowerCase().includes(searchTerm) ||
+                        item.description.toLowerCase().includes(searchTerm)
+                    );
+                }
+
+                // 如果当前分类不是"全部"，则进行分类过滤
+                if (category !== 'all') {
+                    filteredData = filteredData.filter(item => item.category === category);
+                }
+
+                generateCards(filteredData);
+            });
+        });
+
+        // 处理浏览器返回按钮
+        window.addEventListener('popstate', function(event) {
+            // 当用户点击浏览器返回按钮时，确保页面状态正确
+            console.log('返回导航中心', event.state);
+
+            // 如果返回的状态是表格访问状态，我们可以做一些清理工作
+            if (event.state && event.state.page === 'table') {
+                console.log('从表格页面返回');
+            }
+        });
+
+        // 页面加载完成后，确保URL是干净的
+        window.addEventListener('load', function() {
+            if (window.location.hash) {
+                // 使用replaceState清除URL中的hash
+                history.replaceState({
+                    page: 'home',
+                    timestamp: Date.now()
+                }, '多维表格导航中心', window.location.pathname + window.location.search);
+            }
+        });
+    </script>
+</body>
+</html>
